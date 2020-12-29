@@ -163,7 +163,7 @@ async def mash_button(controller_state, button, interval):
     # await future to trigger exceptions in case something went wrong
     await user_input
 
-    async def repeat_sequence(controller_state, *buttons, interval):
+async def repeat_sequence(controller_state, *buttons, interval):
     # wait until controller fully connected
     await controller_state.connect()
     for button in buttons:
