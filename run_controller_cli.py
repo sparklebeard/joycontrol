@@ -214,6 +214,23 @@ def _register_commands_with_controller_state(controller_state, cli):
 
     cli.add_command(mash.__name__, mash)
 
+    # Repeat a sequence of commands
+    async def sequence(*args):
+        """
+        sequence - Repeat a specified sequence of button presses at a set interval
+
+        Usage:
+            mash {<buttons>} <interval>
+        """
+        if not len(args) == 2:
+            raise ValueError('"repeat_sequence commands requires a button sequence and interval as arguments!')
+
+        buttons, interval = args
+        await repeat_sequence(controller_state, buttons, interval)
+
+    cli.add_command(sequence.__name__, sequence)
+
+
     # Hold a button command
     async def hold(*args):
         """
