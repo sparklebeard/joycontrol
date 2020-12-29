@@ -163,6 +163,25 @@ async def mash_button(controller_state, button, interval):
     # await future to trigger exceptions in case something went wrong
     await user_input
 
+    async def repeat_sequence(controller_state, *buttons, interval):
+    # wait until controller fully connected
+    await controller_state.connect()
+    for button in buttons:
+        ensure_valid_button(controller_state, button)
+
+    user_input = asyncio.ensure_future(
+        ainput(prompt=f'Pressing {buttons} every {interval} seconds... Press <enter> to stop.')
+        )
+    # push each button in sequence until user input
+    while not user_input.done():
+        for button in buttons:
+            await button_push(controller_state, button)
+            await asyncio.sleep(float(interval))
+
+    # await future to trigger exceptions in case something went wrong
+    await user_input
+
+
 
 def _register_commands_with_controller_state(controller_state, cli):
     """
