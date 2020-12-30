@@ -163,24 +163,58 @@ async def mash_button(controller_state, button, interval):
     # await future to trigger exceptions in case something went wrong
     await user_input
 
-async def repeat_sequence(controller_state, *buttons, interval):
+async def repeat_sequence(controller_state, buttons, interval):
     # wait until controller fully connected
     await controller_state.connect()
+
+    sticks = ['l_stick_up', 'l_stick_down', 'l_stick_left', 'l_stick_right', 'l_stick_center', 'r_stick_up', 'r_stick_down', 'r_stick_left', 'r_stick_right', 'r_stick_center']
     for button in buttons:
-        ensure_valid_button(controller_state, button)
+        if button not in sticks:
+            ensure_valid_button(controller_state, button)
+        else:
+            first = button[0]
+            ensure_valid_button(controller_state, f'{first}_stick')
 
     user_input = asyncio.ensure_future(
-        ainput(prompt=f'Pressing {buttons} every {interval} seconds... Press <enter> to stop.')
+        ainput(prompt=f'Pressing {buttons} every {float(interval)} seconds... Press <enter> to stop!')
         )
     # push each button in sequence until user input
     while not user_input.done():
         for button in buttons:
-            await button_push(controller_state, button)
+            if button in sticks:
+                first = button[0]
+                direction = button[len('l_stick_'):]
+                stick = ControllerCLI.stick_for_side(controller_state, first)
+                await ControllerCLI.push_stick(stick, direction)
+            else:
+                await button_push(controller_state, button)
             await asyncio.sleep(float(interval))
 
     # await future to trigger exceptions in case something went wrong
     await user_input
 
+async def single_sequence(controller_state, buttons, interval):
+    # wait until controller fully connected
+    await controller_state.connect()
+
+    sticks = ['l_stick_up', 'l_stick_down', 'l_stick_left', 'l_stick_right', 'l_stick_center', 'r_stick_up', 'r_stick_down', 'r_stick_left', 'r_stick_right', 'r_stick_center']
+    for button in buttons:
+        if button not in sticks:
+            ensure_valid_button(controller_state, button)
+        else:
+            first = button[0]
+            ensure_valid_button(controller_state, f'{first}_stick')
+
+# push each button in sequence 
+    for button in buttons:
+        if button in sticks:
+            first = button[0]
+            direction = button[len('l_stick_'):]
+            stick = ControllerCLI.stick_for_side(controller_state, first)
+            await ControllerCLI.push_stick(stick, direction)
+        else:
+            await button_push(controller_state, button)
+        await asyncio.sleep(float(interval))
 
 
 def _register_commands_with_controller_state(controller_state, cli):
@@ -220,13 +254,178 @@ def _register_commands_with_controller_state(controller_state, cli):
         sequence - Repeat a specified sequence of button presses at a set interval
 
         Usage:
-            mash {<buttons>} <interval>
-        """
-        if not len(args) == 2:
-            raise ValueError('"repeat_sequence commands requires a button sequence and interval as arguments!')
+            sequence <buttons> <interval>
+            sequence <preset>
 
-        buttons, interval = args
-        await repeat_sequence(controller_state, buttons, interval)
+            Presets:
+                game            a b up left left a 0.5
+                ckits           a a a a down a 1
+                nmt             a 1
+                stars           r_stick_up r_stick_center a a a a 0.3
+
+        Example:
+            sequence a b right right 1
+        """
+
+        if len(args) == 1:
+            sequence = []
+            interval = '0'
+
+            if args[0] == 'game':
+                # first = 'a'
+                # initial_delay = 3
+                # sequence = ['a', 'b', 'up', 'left', 'left', 'a']
+                # interval = '0.5'
+                first = 'home'
+                initial_delay = 3
+                sequence = ['down', 'down', 'down', 'down', 'up', 'a']
+                interval = '0.5'
+
+                await button_push(controller_state, first)
+                await asyncio.sleep(initial_delay)
+                await single_sequence(controller_state, sequence, interval)
+                return
+
+            if args[0] == 'ckits':
+                sequence = ['a', 'a', 'a', 'a', 'down', 'a']
+                interval = '2.5'
+                initial_seq = ['a', 'a', 'down', 'a']
+                await single_sequence(controller_state, initial_seq, interval)
+
+            elif args[0] == 'nmt':
+                sequence = ['a']
+                interval = '1'
+            elif args[0] == 'stars':
+                sequence = ['r_stick_up', 'r_stick_center', 'a', 'a', 'a', 'a', 'a']
+                interval = '0.3'
+            else:
+                raise ValueError('"repeat_sequence" command requires a button sequence and interval as arguments!')
+
+            await repeat_sequence(controller_state, sequence, interval)
+
+        elif args[0] == 'ables':
+            selections = args[1:]
+            # toC4 = tops 3rd row 4th column
+            # evA1 = everything 1st row first column
+
+            def moves_for_tab(tab) -> int:
+                moves = 0
+                if tab == 'ev':
+                    moves = 0
+                elif tab == 'to':
+                    moves = 1
+                elif tab == 'bo':
+                    moves = 2
+                elif tab == 'dr':
+                    moves = 3
+                elif tab == 'ha':
+                    moves = 4
+                elif tab == 'ac':
+                    moves = 5
+                elif tab == 'so':
+                    moves = 6
+                elif tab == 'sh':
+                    moves = 7
+                else:
+                    raise ValueError(f'{tab} is not a known tab. Known tabs: ev to bo dr ha ac so sh')
+
+                return moves
+
+            def moves_for_column(column) -> int:
+                moves = 0
+                if column in ['a', 'A']:
+                    moves = 0
+                elif column in ['b', 'B']:
+                    moves = 1
+                elif column in ['c', 'C']:
+                    moves = 2
+                elif column in ['d', 'D']:
+                    moves = 3
+                elif column in ['e', 'E']:
+                    moves = 4
+                elif column in ['f', 'F']:
+                    moves = 5
+                else:
+                    raise ValueError(f'{column} is not a known column letter. Known letters: A B C D E F')
+
+                return moves
+
+            def moves_for_row(row) -> int:
+                if not isinstance(row, int):
+                    raise ValueError(f'{row} is not a valid row number.')
+                moves = row-1
+                return moves
+
+            def move_to_item_sequence(item):
+                tab_str = item[0:2]
+                tab_moves = moves_for_tab(tab_str)
+
+                column_str = item[2]
+                column_moves = moves_for_column(column_str)
+
+                row_num = int(item[3:])
+                row_moves = moves_for_row(row_num)
+
+                def make_moves(button, count) -> list:
+                    moves = []
+                    i = 0
+                    while i < count:
+                        moves += [button]
+                        i += 1
+                    return moves
+
+                moves = []
+
+                moves += make_moves('r', tab_moves)
+                moves += make_moves('right', column_moves)
+                moves += make_moves('down', row_moves)
+
+                return moves
+
+            async def full_sequence_purchase(item):   
+                face_changing_room = ['l_stick_up', 'l_stick_center', 'a']
+                await single_sequence(controller_state, face_changing_room, 1)
+
+                enter_changing_room = ['a']
+                await single_sequence(controller_state, enter_changing_room, 5)
+                await asyncio.sleep(4)
+
+                move_to_item = move_to_item_sequence(item)
+                print(move_to_item)
+                await single_sequence(controller_state, move_to_item, 0.3)
+
+                buy_item = ['a', 'plus', 'a', 'left', 'a']
+                await single_sequence(controller_state, buy_item, 0.3)
+
+                await asyncio.sleep(4)
+
+                talk_mabel = ['a']
+                await single_sequence(controller_state, talk_mabel, 2)
+
+            user_input = asyncio.ensure_future(
+                ainput(prompt=f'Running purchase sequence for {selections}. Press <enter> to stop!')
+                )  
+
+            for selection in selections:
+                await full_sequence_purchase(selection)
+
+            await user_input
+
+
+
+
+
+        else:
+            lastArg = args[len(args)-1]
+            interval = float(lastArg)
+            if not interval:
+                raise ValueError('"repeat_sequence" command requires a button sequence and interval as arguments!')
+            if not len(args) >= 2:
+                raise ValueError('"repeat_sequence" command requires a button sequence and interval as arguments!')
+    
+                
+            buttons = args[:-1]
+            await repeat_sequence(controller_state, buttons, interval)
 
     cli.add_command(sequence.__name__, sequence)
 

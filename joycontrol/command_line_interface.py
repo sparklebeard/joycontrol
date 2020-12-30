@@ -4,7 +4,7 @@ import shlex
 
 from aioconsole import ainput
 
-from joycontrol.controller_state import button_push, ControllerState
+from joycontrol.controller_state import button_push, ControllerState, StickState
 from joycontrol.transport import NotConnectedError
 
 logger = logging.getLogger(__name__)
@@ -107,6 +107,29 @@ class ControllerCLI(CLI):
         print(', '.join(self.controller_state.button_state.get_available_buttons()))
         print()
         await super().cmd_help()
+
+    @staticmethod
+    def stick_for_side(controller_state: ControllerState, side) -> StickState:
+        if side in ('l', 'left'):
+            return controller_state.l_stick_state
+        elif side in ('r', 'right'):
+            return controller_state.r_stick_state
+        else:
+            raise ValueError('Value of side must be "l", "left" or "r", "right"')
+
+
+    @staticmethod
+    async def push_stick(stick: StickState, direction):
+        if direction == 'center':
+            stick.set_center()
+        elif direction == 'up':
+            stick.set_up()
+        elif direction == 'down':
+            stick.set_down()
+        elif direction == 'left':
+            stick.set_left()
+        elif direction == 'right':
+            stick.set_right()
 
     @staticmethod
     def _set_stick(stick, direction, value):

@@ -22,6 +22,8 @@ class FlashMemory:
             # R-stick factory calibration
             spi_flash_memory_data[0x6046:0x604F] = [0x00, 0x08, 0x80, 0x00, 0x07, 0x70, 0x00, 0x07, 0x70]
 
+        spi_flash_memory_data[24656:24662] = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+
         self.data = spi_flash_memory_data
 
     def __getitem__(self, item):
