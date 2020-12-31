@@ -385,35 +385,31 @@ def _register_commands_with_controller_state(controller_state, cli):
             async def full_sequence_purchase(item):   
                 face_changing_room = ['l_stick_up', 'l_stick_center', 'a']
                 await single_sequence(controller_state, face_changing_room, 1)
+                await asyncio.sleep(2)
 
-                enter_changing_room = ['a']
-                await single_sequence(controller_state, enter_changing_room, 5)
-                await asyncio.sleep(4)
+                respond_mabel = 'a'
+                await button_push(controller_state, respond_mabel)
+                await asyncio.sleep(6)
 
                 move_to_item = move_to_item_sequence(item)
-                print(move_to_item)
-                await single_sequence(controller_state, move_to_item, 0.3)
+                await single_sequence(controller_state, move_to_item, 1)
 
                 buy_item = ['a', 'plus', 'a', 'left', 'a']
-                await single_sequence(controller_state, buy_item, 0.3)
+                await single_sequence(controller_state, buy_item, 1)
+                await asyncio.sleep(8)
 
+                talk_mabel = 'a'
+                await button_push(controller_state, talk_mabel)
                 await asyncio.sleep(4)
 
-                talk_mabel = ['a']
-                await single_sequence(controller_state, talk_mabel, 2)
-
             user_input = asyncio.ensure_future(
-                ainput(prompt=f'Running purchase sequence for {selections}. Press <enter> to stop!')
-                )  
+                ainput(prompt=f'Running purchase sequence for {selections}. Press <enter> to stop!\n')
+                )
 
             for selection in selections:
                 await full_sequence_purchase(selection)
 
             await user_input
-
-
-
-
 
         else:
             lastArg = args[len(args)-1]
