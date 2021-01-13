@@ -57,6 +57,8 @@ async def create_hid_server(protocol_factory, ctl_psm=17, itr_psm=19, device_id=
         except OSError as err:
             logger.warning(err)
             # If the ports are already taken, this probably means that the bluez "input" plugin is enabled.
+            print('Fallback: Restarting bluetooth due to incompatibilities with the bluez "input" plugin. '
+                           'Disable the plugin to avoid issues. See https://github.com/mart1nro/joycontrol/issues/8.')
             logger.warning('Fallback: Restarting bluetooth due to incompatibilities with the bluez "input" plugin. '
                            'Disable the plugin to avoid issues. See https://github.com/mart1nro/joycontrol/issues/8.')
             # HACK: To circumvent incompatibilities with the bluetooth "input" plugin, we need to restart Bluetooth here.

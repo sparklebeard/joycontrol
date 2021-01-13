@@ -267,7 +267,15 @@ def _register_commands_with_controller_state(controller_state, cli):
             sequence a b right right 1
         """
 
-        if len(args) == 1:
+        def make_moves(button, count) -> list:
+                    moves = []
+                    i = 0
+                    while i < count:
+                        moves += [button]
+                        i += 1
+                    return moves
+
+        if len(args) == 1 and args[0] != 'test':
             sequence = []
             interval = '0'
 
@@ -302,6 +310,39 @@ def _register_commands_with_controller_state(controller_state, cli):
                 raise ValueError('"repeat_sequence" command requires a button sequence and interval as arguments!')
 
             await repeat_sequence(controller_state, sequence, interval)
+
+        elif args[0] == 'test':
+            get_to_home = make_moves('home', 6)
+            get_to_settings = ['down'] + make_moves('right', 5) + ['a']
+            get_to_controller_menu = make_moves('down', 12)
+
+            enter_controller_menu = 'a'
+
+            # Must hold 'down' for 4s to ensure is at bottom
+            scroll_to_bottom = 'down'
+            scroll_to_bottom_duration = 4
+
+            enter_test_screen = ['up', 'a', 'a']
+
+            test_sequence = ['a', 'b', 'x', 'y', 'l', 'r']
+
+            user_input = asyncio.ensure_future(
+                ainput(prompt=f'Running test sequence. Press <enter> to stop!\n')
+                )
+
+            await single_sequence(controller_state, get_to_home, 1)
+            await single_sequence(controller_state, get_to_settings, 1)
+            await single_sequence(controller_state, get_to_controller_menu, 1)
+            await button_push(controller_state, enter_controller_menu)
+            await button_push(controller_state, scroll_to_bottom, sec=scroll_to_bottom_duration)
+            await single_sequence(controller_state, enter_test_screen, 1)
+            await single_sequence(controller_state, test_sequence, 1)
+
+
+
+            await user_input
+
+
 
         elif args[0] == 'ables':
             selections = args[1:]
@@ -366,13 +407,7 @@ def _register_commands_with_controller_state(controller_state, cli):
                 row_num = int(item[3:])
                 row_moves = moves_for_row(row_num)
 
-                def make_moves(button, count) -> list:
-                    moves = []
-                    i = 0
-                    while i < count:
-                        moves += [button]
-                        i += 1
-                    return moves
+                
 
                 moves = []
 
