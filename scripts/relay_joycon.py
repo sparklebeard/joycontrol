@@ -1,6 +1,6 @@
 import argparse
 import asyncio
-import logging
+# import logging
 import os
 import socket
 import struct
@@ -12,6 +12,10 @@ from joycontrol import logging_default as log, utils
 from joycontrol.device import HidDevice
 from joycontrol.server import PROFILE_PATH
 from joycontrol.utils import AsyncHID
+from CustomSupport.JCSupport import JCSignal
+from CustomSupport.JCSupport import send_signal
+
+import CustomSupport.customlogger as logger
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +101,7 @@ async def _main(capture_file=None, reconnect_bt_addr=None):
         await asyncio.sleep(1)
 
         controller = await get_hid_controller()
+
 
         logger.info('Connecting with the Switch... Please open the "Change Grip/Order" menu.')
 

@@ -1,5 +1,5 @@
 import asyncio
-import logging
+# import logging
 import time
 from asyncio import BaseTransport, BaseProtocol
 from contextlib import suppress
@@ -11,6 +11,10 @@ from joycontrol.controller_state import ControllerState
 from joycontrol.memory import FlashMemory
 from joycontrol.report import OutputReport, SubCommand, InputReport, OutputReportID
 from joycontrol.transport import NotConnectedError
+
+import CustomSupport.customlogger as logging
+from CustomSupport.JCSupport import JCSignal
+from CustomSupport.JCSupport import send_signal
 
 logger = logging.getLogger(__name__)
 
@@ -105,11 +109,13 @@ class ControllerProtocol(BaseProtocol):
         await self._data_received.wait()
 
     def connection_made(self, transport: BaseTransport) -> None:
+        send_signal(JCSignal.connectionEstablished)
         logger.debug('Connection established.')
         self.transport = transport
 
     def connection_lost(self, exc: Optional[Exception] = None) -> None:
         if self.transport is not None:
+            send_signal(JCSignal.disconnected)
             logger.error('Connection lost.')
             asyncio.ensure_future(self.transport.close())
             self.transport = None
@@ -241,7 +247,7 @@ class ControllerProtocol(BaseProtocol):
         if sub_command is None:
             raise ValueError('Received output report does not contain a sub command')
 
-        logging.info(f'received output report - Sub command {sub_command}')
+        logger.info(f'received output report - Sub command {sub_command}')
 
         sub_command_data = report.get_sub_command_data()
         assert sub_command_data is not None
@@ -277,6 +283,7 @@ class ControllerProtocol(BaseProtocol):
 
             elif sub_command == SubCommand.SET_PLAYER_LIGHTS:
                 await self._command_set_player_lights(sub_command_data)
+                send_signal(JCSignal.readyForInput)
             else:
                 logger.warning(f'Sub command 0x{sub_command.value:02x} not implemented - ignoring')
                 return False

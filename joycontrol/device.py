@@ -1,8 +1,10 @@
-import logging
+# import logging
 import uuid
 import dbus
 
 from joycontrol import utils
+
+import CustomSupport.customlogger as logging
 
 logger = logging.getLogger(__name__)
 

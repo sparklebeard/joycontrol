@@ -1,5 +1,5 @@
 import asyncio
-import logging
+# import logging
 import socket
 
 import dbus
@@ -10,8 +10,19 @@ from joycontrol.device import HidDevice
 from joycontrol.report import InputReport
 from joycontrol.transport import L2CAP_Transport
 
+from CustomSupport.JCSupport import JCSignal
+from CustomSupport.JCSupport import send_signal
+
+import CustomSupport.customlogger as logging
+
 PROFILE_PATH = pkg_resources.resource_filename('joycontrol', 'profile/sdp_record_hid.xml')
 logger = logging.getLogger(__name__)
+
+# jcsupport = logging.getLogger()
+# jcsupport.setLevel(logging.INFO)
+# jchandler = logging.StreamHandler(sys.stdout)
+# formatter = logging.Formatter('JC*%(message)s')
+# jchandler.setFormatter(fmt)
 
 
 async def _send_empty_input_reports(transport):
@@ -23,6 +34,7 @@ async def _send_empty_input_reports(transport):
 
 async def create_hid_server(protocol_factory, ctl_psm=17, itr_psm=19, device_id=None, reconnect_bt_addr=None,
                             capture_file=None):
+    
     """
     :param protocol_factory: Factory function returning a ControllerProtocol instance
     :param ctl_psm: hid control channel port
@@ -57,10 +69,9 @@ async def create_hid_server(protocol_factory, ctl_psm=17, itr_psm=19, device_id=
         except OSError as err:
             logger.warning(err)
             # If the ports are already taken, this probably means that the bluez "input" plugin is enabled.
-            print('Fallback: Restarting bluetooth due to incompatibilities with the bluez "input" plugin. '
-                           'Disable the plugin to avoid issues. See https://github.com/mart1nro/joycontrol/issues/8.')
-            logger.warning('Fallback: Restarting bluetooth due to incompatibilities with the bluez "input" plugin. '
-                           'Disable the plugin to avoid issues. See https://github.com/mart1nro/joycontrol/issues/8.')
+            
+            send_signal(JCSignal.restartingBluetooth)
+            logger.warning('Fallback: Restarting bluetooth due to incompatibilities with the bluez "input" plugin. Disable the Bluezplugin to avoid issues. See https://github.com/mart1nro/joycontrol/issues/8.')
             # HACK: To circumvent incompatibilities with the bluetooth "input" plugin, we need to restart Bluetooth here.
             # The Switch does not connect to the sockets if we don't.
             # For more info see: https://github.com/mart1nro/joycontrol/issues/8
@@ -95,6 +106,8 @@ async def create_hid_server(protocol_factory, ctl_psm=17, itr_psm=19, device_id=
         # start advertising
         hid.discoverable()
 
+
+        send_signal(JCSignal.waitingForSwitch)
         logger.info('Waiting for Switch to connect... Please open the "Change Grip/Order" menu.')
 
         loop = asyncio.get_event_loop()

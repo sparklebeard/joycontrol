@@ -1,11 +1,16 @@
 import inspect
-import logging
+# import logging
 import shlex
 
 from aioconsole import ainput
 
 from joycontrol.controller_state import button_push, ControllerState, StickState
 from joycontrol.transport import NotConnectedError
+
+from CustomSupport.JCSupport import JCSignal
+from CustomSupport.JCSupport import send_signal
+
+import CustomSupport.customlogger as logging
 
 logger = logging.getLogger(__name__)
 
@@ -222,5 +227,6 @@ class ControllerCLI(CLI):
                 try:
                     await self.controller_state.send()
                 except NotConnectedError:
+                    send_signal(JCSignal.disconnected)
                     logger.info('Connection was lost.')
                     return

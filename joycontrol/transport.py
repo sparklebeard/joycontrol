@@ -1,10 +1,13 @@
 import asyncio
-import logging
+# import logging
 import struct
 import time
 from typing import Any
 
 from joycontrol import utils
+
+import CustomSupport.customlogger as logging
+
 
 logger = logging.getLogger(__name__)
 

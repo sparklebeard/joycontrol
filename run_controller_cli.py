@@ -2,18 +2,22 @@
 
 import argparse
 import asyncio
-import logging
+# import logging
 import os
 
 from aioconsole import ainput
 
-from joycontrol import logging_default as log, utils
+from joycontrol import utils
 from joycontrol.command_line_interface import ControllerCLI
 from joycontrol.controller import Controller
 from joycontrol.controller_state import ControllerState, button_push, button_press, button_release
 from joycontrol.memory import FlashMemory
 from joycontrol.protocol import controller_protocol_factory
 from joycontrol.server import create_hid_server
+
+from CustomSupport.JCSupport import JCSignal
+from CustomSupport.JCSupport import send_signal
+import CustomSupport.customlogger as logging
 
 logger = logging.getLogger(__name__)
 
@@ -567,6 +571,7 @@ async def _main(args):
         try:
             await cli.run()
         finally:
+            send_signal(JCSignal.disconnected)
             logger.info('Stopping communication...')
             await transport.close()
 
@@ -578,7 +583,7 @@ if __name__ == '__main__':
 
     # setup logging
     #log.configure(console_level=logging.ERROR)
-    log.configure()
+    # log.configure()
 
     parser = argparse.ArgumentParser()
     parser.add_argument('controller', help='JOYCON_R, JOYCON_L or PRO_CONTROLLER')

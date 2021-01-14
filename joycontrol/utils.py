@@ -1,8 +1,10 @@
 import asyncio
-import logging
+# import logging
 from contextlib import contextmanager
 
 import hid
+
+import CustomSupport.customlogger as logging
 
 logger = logging.getLogger(__name__)
 
